@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-primary: #2C3E50;
+  --color-accent: #D4AF37;
+  --color-accent-hover: #B5952F;
+  --color-bg-page: #F8F9FA;
+  --color-bg-card: #FFFFFF;
+  --color-text-heading: #212529;
+  --color-text-body: #495057;
+
+  /* Font settings can be added here if needed, but Tailwind 4 inherits cleanly */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --primary: #2C3E50;
+    --accent: #D4AF37;
+    --accent-hover: #B5952F;
+    --bg-page: #F8F9FA;
+    --bg-card: #FFFFFF;
+    --text-heading: #212529;
+    --text-body: #495057;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary: #34495E;
+      --accent: #F1C40F;
+      --accent-hover: #D4AF37;
+      --bg-page: #121212;
+      --bg-card: #1E1E1E;
+      --text-heading: #F8F9FA;
+      --text-body: #CED4DA;
+    }
+  }
+
+  body {
+    background-color: var(--bg-page);
+    color: var(--text-body);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--text-heading);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .btn-primary {
+    @apply bg-[var(--accent)] text-white shadow-md transition-all duration-200;
+    @apply hover:bg-[var(--accent-hover)] hover:-translate-y-1 hover:shadow-lg;
+    @apply focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2;
+    @apply disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-md border border-gray-300 bg-[var(--bg-card)] text-[var(--text-body)] transition-colors;
+    @apply focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] focus:outline-none;
+  }
 }
