@@ -137,4 +137,5 @@
 
 1. `DESIGN_ai-interior-saas.md`
 2. `TASK_ai-interior-saas.md`
-3. 後續批准後再進入實作
+3. `DEVELOPMENT_GUIDE_ci4_ai-interior-saas.md`
+4. 後續批准後再進入實作
