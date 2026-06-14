@@ -140,19 +140,21 @@ flowchart TD
 ### Task 8：點數與支付機制
 
 - 目標
-  - 支援免費額度、扣點、充值、付款同步
+  - 支援免費額度、扣點、香港本地掃碼付款、收據上傳與人工審核入帳
 - 輸入契約
   - plan rules
   - credit cost rules
 - 輸出契約
   - `CreditLedger`
   - balance query
-  - checkout flow
-  - webhook sync
+  - payment instruction page
+  - receipt upload flow
+  - review workflow
 - 實作約束
   - 扣點邏輯需具一致性
   - 支付狀態與點數入帳需可追蹤
-  - webhook 與點數入帳需做 service 層封裝
+  - 使用者上傳收據後不可立即入帳
+  - 審核通過後才可加點並寫入 ledger
 
 ### Task 9：使用者工作台整合
 
@@ -232,3 +234,4 @@ flowchart TD
 3. 檔案與任務狀態的常數集中管理，避免 magic string。
 4. AI、支付、儲存供應商一律經過 adapter。
 5. 背景工作以 command 方式執行，方便 cron 與部署。
+6. 手動付款必須保留審核紀錄與拒絕原因。

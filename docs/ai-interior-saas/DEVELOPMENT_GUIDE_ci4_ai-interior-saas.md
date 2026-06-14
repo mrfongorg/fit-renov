@@ -57,7 +57,7 @@
 - 認證：建議 `CodeIgniter Shield`
 - 任務處理：`DB Queue + CLI Commands + cron`
 - 儲存：本地儲存抽象層或 S3 相容物件儲存
-- 支付：`Stripe`
+- 支付：香港本地手動收款，支援 `FPS / PayMe / AlipayHK` 二維碼與收據上傳審核
 - AI：第三方影像生成/編修 API
 
 ### 3.2 為什麼選 CodeIgniter 4
@@ -303,7 +303,9 @@ project-root/
 - 免費額度
 - 點數消耗
 - 點數充值
-- 支付 webhook
+- 付款方式說明頁
+- 收據上傳
+- 人工審核
 - 交易紀錄
 
 ### 7.7 Admin 模組
@@ -449,18 +451,37 @@ project-root/
 
 - `id`
 - `user_id`
-- `provider`
-- `provider_order_id`
+- `payment_method`
 - `package_name`
 - `amount`
 - `currency`
 - `credit_amount`
 - `status`
+- `payment_reference`
 - `paid_at`
+- `reviewed_by`
+- `reviewed_at`
+- `review_note`
 - `created_at`
 - `updated_at`
 
-### 8.10 queue_jobs
+### 8.10 payment_proofs
+
+欄位建議：
+
+- `id`
+- `payment_order_id`
+- `receipt_file_path`
+- `receipt_original_name`
+- `receipt_mime_type`
+- `receipt_file_size`
+- `payer_note`
+- `review_status`
+- `submitted_at`
+- `created_at`
+- `updated_at`
+
+### 8.11 queue_jobs
 
 欄位建議：
 
@@ -521,7 +542,10 @@ POST   /app/projects/{id}/assets
 POST   /app/projects/{id}/generate
 GET    /app/projects/{id}/results
 GET    /app/billing
-POST   /app/billing/checkout
+GET    /app/billing/top-up
+POST   /app/billing/orders
+GET    /app/billing/orders/{id}
+POST   /app/billing/orders/{id}/receipt
 GET    /app/settings
 ```
 
@@ -532,7 +556,6 @@ GET    /api/projects/{id}/jobs
 GET    /api/jobs/{id}
 GET    /api/jobs/{id}/results
 DELETE /api/assets/{id}
-POST   /api/webhooks/stripe
 ```
 
 ### 10.5 後台路由
@@ -542,6 +565,10 @@ GET    /admin
 GET    /admin/users
 GET    /admin/jobs
 GET    /admin/jobs/{id}
+GET    /admin/payments
+GET    /admin/payments/{id}
+POST   /admin/payments/{id}/approve
+POST   /admin/payments/{id}/reject
 GET    /admin/style-presets
 POST   /admin/style-presets
 ```
@@ -560,9 +587,9 @@ POST   /admin/style-presets
 - `App\GenerationController`
 - `App\BillingController`
 - `Api\JobController`
-- `Api\WebhookController`
 - `Admin\AdminDashboardController`
 - `Admin\GenerationJobController`
+- `Admin\PaymentReviewController`
 - `Admin\StylePresetController`
 
 ## 12. Service 設計範例
@@ -608,9 +635,10 @@ POST   /admin/style-presets
 負責：
 
 - 建立付款訂單
-- 串接支付供應商
-- 驗證 webhook
-- 完成付款後加點
+- 產生付款方式與對應 QR 顯示資料
+- 接收收據上傳
+- 審核付款憑證
+- 完成審核後加點
 
 ## 13. AI Provider Adapter 規範
 
@@ -734,10 +762,25 @@ POST   /admin/style-presets
 
 1. 使用者選擇點數包
 2. 建立 `payment_orders`
-3. 導向 Stripe Checkout
-4. Stripe webhook 回寫付款結果
-5. `BillingService` 驗證成功後加點
-6. 寫入 `credit_ledgers`
+3. 顯示 `FPS / PayMe / AlipayHK` 付款說明與二維碼
+4. 使用者完成掃碼付款後上傳收據
+5. 後台審核收據
+6. `BillingService` 審核成功後加點
+7. 寫入 `credit_ledgers`
+
+### 17.4 payment_orders 狀態建議
+
+- `pending_payment`
+- `proof_uploaded`
+- `approved`
+- `rejected`
+- `cancelled`
+
+### 17.5 payment_proofs 審核狀態建議
+
+- `pending_review`
+- `approved`
+- `rejected`
 
 ## 18. View 與前端規範
 
@@ -760,13 +803,14 @@ POST   /admin/style-presets
 - 任務輪詢刷新
 - 圖片比較滑桿
 - 點數餘額即時提示
+- 收據上傳預覽
 
 ## 19. 安全規範
 
 1. 啟用 CSRF 防護
 2. 啟用認證 filter 與 admin filter
 3. 所有檔案上傳都需做白名單驗證
-4. 所有 webhook 都需驗簽
+4. 收據審核需記錄操作人與操作時間
 5. 專案與結果查詢必須驗證 `user_id`
 6. 敏感設定全部放 `.env`
 7. 錯誤訊息不可直接曝光第三方 provider 原始敏感內容
@@ -779,7 +823,8 @@ POST   /admin/style-presets
 - 檔案上傳失敗
 - 任務建立失敗
 - AI provider 回應錯誤
-- 支付 webhook 錯誤
+- 收據上傳失敗
+- 付款審核拒絕
 - 點數扣除異常
 
 ### 20.2 建議監控指標
@@ -874,8 +919,8 @@ POST   /admin/style-presets
 ### Sprint 4
 
 - 點數系統
-- Stripe
-- webhook
+- 付款指引頁
+- 收據上傳與審核
 - Billing 頁
 
 ### Sprint 5
@@ -920,7 +965,7 @@ POST   /admin/style-presets
 - migration 是否完成
 - writable 權限是否正常
 - cron 是否正常觸發
-- webhook URL 是否可用
+- 收據上傳流程是否正常
 - 上傳與結果圖 URL 是否可讀
 
 ## 26. 建議的 .env 類別
@@ -932,7 +977,7 @@ POST   /admin/style-presets
 - Auth mail 設定
 - Storage 設定
 - AI provider API 設定
-- Stripe key / webhook secret
+- FPS / PayMe / AlipayHK 收款資訊
 - Queue worker 設定
 
 ## 27. 開發交付清單

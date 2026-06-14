@@ -26,7 +26,7 @@ flowchart TD
     F --> J[(Object Storage)]
     G --> K[CLI Worker / Cron Queue]
     K --> L[AI Provider Adapter]
-    H --> M[Payment Provider]
+    H --> M[Manual Payment Review]
 ```
 
 ## 3. 模組說明
@@ -82,7 +82,7 @@ flowchart LR
 
 - UI 不直接耦合第三方 AI 或支付 SDK。
 - `Generation Module` 只透過 `AI Provider Adapter` 呼叫外部模型。
-- `Billing Module` 只透過 `Payment Adapter` 呼叫支付供應商。
+- `Billing Module` 統一處理付款方式、收據上傳與人工審核流程。
 - Controller 不承擔商業規則，只作路由協調與輸入驗證。
 
 ## 5. 資料流向圖
@@ -149,6 +149,18 @@ sequenceDiagram
   - `creditCost`
   - `estimatedWaitTime`
 
+### 6.4 Payment Proof Contract
+
+- Input
+  - `paymentMethod`
+  - `paymentOrderId`
+  - `receiptFileUrl`
+  - `payerNote`
+- Output
+  - `paymentProofId`
+  - `reviewStatus`
+  - `submittedAt`
+
 ## 7. 建議資料模型
 
 ### 7.1 Users
@@ -203,7 +215,30 @@ sequenceDiagram
 - `referenceType`
 - `referenceId`
 
-## 7.7 CodeIgniter 模組對應
+### 7.7 PaymentOrders
+
+- `id`
+- `userId`
+- `paymentMethod`
+- `packageName`
+- `amount`
+- `currency`
+- `creditAmount`
+- `status`
+- `reviewedBy`
+- `reviewedAt`
+
+### 7.8 PaymentProofs
+
+- `id`
+- `paymentOrderId`
+- `receiptFilePath`
+- `payerNote`
+- `reviewStatus`
+- `reviewNote`
+- `submittedAt`
+
+## 7.9 CodeIgniter 模組對應
 
 - `app/Controllers`
   - 頁面路由、表單提交、API 入口
@@ -243,6 +278,7 @@ flowchart TD
 3. 生成結果需綁定使用者專案權限，不可任意公開列舉。
 4. 需預留素材刪除與帳號資料刪除能力，以支援隱私要求。
 5. `CodeIgniter` 的 validation、filter 與 CSRF 保護需正確啟用。
+6. 收據圖片需限制格式、大小，避免上傳惡意檔案。
 
 ## 10. 可替換點設計
 
@@ -250,7 +286,7 @@ flowchart TD
 
 1. `AiProviderAdapter`
 2. `StorageAdapter`
-3. `PaymentAdapter`
+3. `PaymentInstructionAdapter`
 4. `ImportAdapter`（未來支援 RoomPlan / 掃描資料時使用）
 
 ## 11. 不建議事項
@@ -260,3 +296,4 @@ flowchart TD
 3. 不要把點數判斷直接寫在頁面按鈕事件中。
 4. 不要先做過多企業功能，先驗證個人用戶的核心價值。
 5. 不要把大型商業邏輯堆進單一 controller。
+6. 不要在付款完成前直接加點，必須經過審核狀態流。
