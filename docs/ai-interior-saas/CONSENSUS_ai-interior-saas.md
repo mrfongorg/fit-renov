@@ -6,6 +6,7 @@
 2. MVP 輸入方式：首版支援 `照片上傳 + 戶型圖上傳`。
 3. MVP 輸出目標：以 `2D AI 風格效果圖` 為核心交付。
 4. 商業模式：採 `免費體驗 + 點數制`。
+5. 技術棧：優先採 `PHP + CodeIgniter 4`，不再以 `Next.js` 作為必要前提。
 
 ## 2. 產品目標
 
@@ -79,22 +80,26 @@
 
 ### 6.1 基礎棧
 
-- 前端延續現有 `Next.js App Router + TypeScript + Tailwind CSS`。
-- 不在 MVP 初期引入過度複雜微服務。
+- 採 `PHP + CodeIgniter 4` 作為主要 Web 應用框架。
+- 優先以單體式 MVC 架構完成 MVP，不在初期拆分微服務。
+- 前端以伺服器渲染頁面為主，必要互動再局部加入輕量 JavaScript。
 - 優先採成熟外部服務縮短上市時間。
 
 ### 6.2 建議基礎設施
 
-- Auth / DB / Storage：優先評估 `Supabase`
+- Auth：優先評估 `CodeIgniter Shield` 或等效認證方案
+- DB：優先使用 `MySQL` 或 `PostgreSQL`
+- Storage：物件儲存或本地儲存抽象層
 - Payment：優先評估 `Stripe`
 - AI Generation：使用可商用的第三方影像生成或編輯 API
-- 背景任務：由佇列或非同步任務處理生成流程
+- 背景任務：以資料表佇列 + CLI command + cron 方式處理生成流程
 
 ### 6.3 輸入處理原則
 
 - `照片上傳` 是首要流程，直接支援 jpg / png / webp。
 - `戶型圖上傳` 第一版以圖片或 PDF 轉圖片流程為主，不承諾 CAD 精確解析。
 - 若未來接第三方掃描資料，需透過獨立 import adapter 處理，不污染現有任務模型。
+- Controller 只負責請求協調，檔案驗證、任務建立、扣點邏輯應放在 service 層。
 
 ## 7. 核心資料概念
 

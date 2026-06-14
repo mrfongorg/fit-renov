@@ -56,7 +56,8 @@ flowchart TD
   - auth middleware / guard
   - 受保護頁面機制
 - 實作約束
-  - 禁止把 provider SDK 直接散落在頁面元件
+  - 優先評估 `CodeIgniter Shield`
+  - 禁止把認證流程直接散落在 controller
   - 權限與方案欄位需可擴充
 
 ### Task 3：專案與素材資料模型
@@ -66,8 +67,8 @@ flowchart TD
 - 輸入契約
   - `DESIGN_ai-interior-saas.md` 的資料模型章節
 - 輸出契約
-  - schema / type definitions
-  - repository interface
+  - migration / schema definitions
+  - model / repository interface
 - 實作約束
   - 型別命名清晰，不得使用模糊欄位名稱
   - 狀態欄位需枚舉化
@@ -80,12 +81,13 @@ flowchart TD
   - `projectId`
   - 檔案格式規範
 - 輸出契約
-  - asset upload API / action
-  - 上傳 UI
+  - asset upload controller / endpoint
+  - 上傳 UI / form
   - 驗證與錯誤訊息
 - 實作約束
   - 檔案大小與 mime type 必須驗證
   - 原始檔與縮圖分離管理
+  - 上傳邏輯放在 service，不直接塞進 controller
 
 ### Task 5：風格模板系統
 
@@ -112,13 +114,14 @@ flowchart TD
   - `stylePresetId`
 - 輸出契約
   - generation job API
-  - queue worker
+  - CLI queue worker
   - provider adapter
   - job status polling / refresh
 - 實作約束
   - 任務狀態必須可追蹤
   - 失敗需保留錯誤原因
   - 不可在同步請求中阻塞等待整個生成完成
+  - 以 `DB queue + cron + command` 為第一版背景任務方案
 
 ### Task 7：結果展示與版本比較
 
@@ -149,6 +152,7 @@ flowchart TD
 - 實作約束
   - 扣點邏輯需具一致性
   - 支付狀態與點數入帳需可追蹤
+  - webhook 與點數入帳需做 service 層封裝
 
 ### Task 9：使用者工作台整合
 
@@ -220,3 +224,11 @@ flowchart TD
 6. 回看 1 張結果圖
 
 這條切片最能驗證產品核心價值，也最容易暴露資料模型與任務管線問題。
+
+## 8. CodeIgniter 4 實作提醒
+
+1. Migration 先行，避免資料表結構靠手動同步。
+2. Controller 保持薄層，商業邏輯集中在 service。
+3. 檔案與任務狀態的常數集中管理，避免 magic string。
+4. AI、支付、儲存供應商一律經過 adapter。
+5. 背景工作以 command 方式執行，方便 cron 與部署。

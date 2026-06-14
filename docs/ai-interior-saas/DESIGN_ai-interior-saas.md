@@ -2,7 +2,7 @@
 
 ## 1. 設計目標
 
-本架構以「快速上線、低耦合、可替換外部服務」為核心，支援以下主流程：
+本架構以「快速上線、低耦合、可替換外部服務」為核心，並以 `CodeIgniter 4` 單體式 SaaS 架構承接以下主流程：
 
 1. 使用者登入
 2. 建立空間專案
@@ -16,7 +16,7 @@
 ```mermaid
 flowchart TD
     A[Marketing Site] --> B[App Dashboard]
-    B --> C[Next.js BFF Layer]
+    B --> C[CodeIgniter Controllers]
     C --> D[Auth Service]
     C --> E[Project Service]
     C --> F[Asset Service]
@@ -24,7 +24,7 @@ flowchart TD
     C --> H[Billing Service]
     E --> I[(Postgres)]
     F --> J[(Object Storage)]
-    G --> K[Queue / Worker]
+    G --> K[CLI Worker / Cron Queue]
     K --> L[AI Provider Adapter]
     H --> M[Payment Provider]
 ```
@@ -38,9 +38,9 @@ flowchart TD
 - App Dashboard
   - 使用者專案管理、結果瀏覽、點數與設定
 
-### 3.2 BFF / Server Layer
+### 3.2 Controller / Application Layer
 
-使用 `Next.js Route Handlers` 或 server actions 作為薄型 BFF 層，責任如下：
+使用 `CodeIgniter 4` 的 controller、filter、validation 與 service 作為應用層，責任如下：
 
 - 驗證使用者身份
 - 寫入專案資料
@@ -66,12 +66,12 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    UI[UI Pages] --> BFF[Next.js BFF]
-    BFF --> AUTH[Auth Module]
-    BFF --> PROJECT[Project Module]
-    BFF --> ASSET[Asset Module]
-    BFF --> GEN[Generation Module]
-    BFF --> BILLING[Billing Module]
+    UI[Views / Pages] --> APP[Controllers]
+    APP --> AUTH[Auth Module]
+    APP --> PROJECT[Project Module]
+    APP --> ASSET[Asset Module]
+    APP --> GEN[Generation Module]
+    APP --> BILLING[Billing Module]
     GEN --> STYLE[Style Preset Module]
     GEN --> PROVIDER[AI Provider Adapter]
     ASSET --> STORAGE[Storage Adapter]
@@ -83,6 +83,7 @@ flowchart LR
 - UI 不直接耦合第三方 AI 或支付 SDK。
 - `Generation Module` 只透過 `AI Provider Adapter` 呼叫外部模型。
 - `Billing Module` 只透過 `Payment Adapter` 呼叫支付供應商。
+- Controller 不承擔商業規則，只作路由協調與輸入驗證。
 
 ## 5. 資料流向圖
 
@@ -90,7 +91,7 @@ flowchart LR
 sequenceDiagram
     participant U as User
     participant W as Web App
-    participant B as BFF
+    participant B as CodeIgniter App
     participant S as Storage
     participant DB as Database
     participant Q as Queue
@@ -202,6 +203,23 @@ sequenceDiagram
 - `referenceType`
 - `referenceId`
 
+## 7.7 CodeIgniter 模組對應
+
+- `app/Controllers`
+  - 頁面路由、表單提交、API 入口
+- `app/Services`
+  - 專案、素材、生成、點數、支付協調邏輯
+- `app/Models`
+  - 資料表操作與查詢封裝
+- `app/Entities`
+  - 領域實體與型別封裝
+- `app/Libraries` 或 `app/Adapters`
+  - AI、Storage、Payment、Import adapter
+- `app/Commands`
+  - 背景任務 worker、重試、清理工作
+- `app/Filters`
+  - 登入驗證、權限檢查、後台保護
+
 ## 8. 頁面資訊架構
 
 ```mermaid
@@ -224,6 +242,7 @@ flowchart TD
 2. 上傳檔案需驗證格式、大小與副檔名。
 3. 生成結果需綁定使用者專案權限，不可任意公開列舉。
 4. 需預留素材刪除與帳號資料刪除能力，以支援隱私要求。
+5. `CodeIgniter` 的 validation、filter 與 CSRF 保護需正確啟用。
 
 ## 10. 可替換點設計
 
@@ -240,3 +259,4 @@ flowchart TD
 2. 不要把 prompt 組裝邏輯散落在 UI 元件。
 3. 不要把點數判斷直接寫在頁面按鈕事件中。
 4. 不要先做過多企業功能，先驗證個人用戶的核心價值。
+5. 不要把大型商業邏輯堆進單一 controller。
